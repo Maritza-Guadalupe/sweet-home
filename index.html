@@ -94,6 +94,7 @@
   <div id="levelPick" style="display:none">
     <button class="chip on" data-level="0">Nivel 1</button>
     <button class="chip" data-level="1">Nivel 2</button>
+    <button class="chip" data-level="2">Nivel 3</button>
   </div>
   <div class="keys" id="keysBox" style="display:none">
     <kbd>↑</kbd><span>Saltar las piedras</span>
@@ -116,15 +117,27 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 // ⏱ Segundos que hay que sobrevivir en cada nivel antes del final
 const SURVIVE_SECONDS_NIVEL_1 = 30;
 const SURVIVE_SECONDS_NIVEL_2 = 30;
+const SURVIVE_SECONDS_NIVEL_3 = 30;
 
 // ⚙ Parámetros por nivel (velocidades en unidades/seg)
 const NIVEL_1 = { ENEMY_SPEED: 7,  ROCK_SPEED: 7, SPAWN_MIN: 1.3, SPAWN_MAX: 2.3, ROCK_CHANCE: 0.4, MAX_LEAKS: 3 };
 const NIVEL_2 = { ENEMY_SPEED: 11, ROCK_SPEED: 8, SPAWN_MIN: 1.0, SPAWN_MAX: 1.9, ROCK_CHANCE: 0.4, MAX_LEAKS: 3 };   // arañas más rápidas
 
+// Nivel 3: caracoles lentos que aguantan 2 golpes. Lo que no pongas aquí (SPAWN_Z, ATTACK_RANGE...) usa el valor de CONFIG.
+const NIVEL_3 = {
+  ENEMY_SPEED: 3.5,        // caracoles: lentos
+  ROCK_SPEED: 3.5,         // piedras (igual que los caracoles para que no se atraviesen)
+  SPAWN_Z: -17,            // aparecen más cerca porque avanzan despacio
+  SPAWN_MIN: 1.6, SPAWN_MAX: 2.6, ROCK_CHANCE: 0.35, MAX_LEAKS: 3,
+  ENEMY_HITS: 2,           // golpes necesarios para eliminar un caracol
+  KNOCKBACK: 1.0,          // cuánto retrocede un caracol al recibir el primer golpe
+  ATTACK_RANGE: 3.6,       // alcance del manotazo (mayor para poder dar los 2 golpes)
+};
+
 // ⚙ Parámetros comunes
 const CONFIG = {
-  SURFACE_Y: 2.0,            // Altura (Y) de la superficie de la mesa donde ocurre todo el juego
-  NAMI_Z: 2.0,               // Posición de Nami a lo largo del carril
+  SURFACE_Y: 0,            // Altura (Y) de la superficie de la mesa donde ocurre todo el juego
+  NAMI_Z: 0,               // Posición de Nami a lo largo del carril
   SPAWN_Z: -30,            // Dónde aparecen los obstáculos (lejos de Nami)
   LEAK_DISTANCE: 1.0,      // A qué distancia de Nami cuenta un bicho como "llegó"
   ATTACK_RANGE: 2.8,       // Alcance del manotazo
@@ -137,7 +150,7 @@ const CONFIG = {
 };
 
 // 🎥 Cámara
-const CAMERA = { position: [0, 3.5, 6.5], lookAt: [0, 1.0, -2], fov: 60 };
+const CAMERA = { position: [1.3, 2.6, 5.2], lookAt: [0, 0.8, -6], fov: 55 };
 
 /* 📦 Modelos .glb
    file         → ruta del archivo
@@ -146,32 +159,43 @@ const CAMERA = { position: [0, 3.5, 6.5], lookAt: [0, 1.0, -2], fov: 60 };
    position     → desplazamiento [x, y, z] extra para ajustar el modelo
    rotationY    → giro en radianes (Nami debe mirar hacia -Z; los bichos hacia +Z)
    placeholderScale → escala de la figura de respaldo si el .glb no existe
-   Los escenarios (habitacion, sala) NO se autoajustan: mueve position[1] hasta que la superficie
+   Los escenarios (habitacion, sala, cocina) NO se autoajustan: mueve position[1] hasta que la superficie
    de la mesa quede en y = CONFIG.SURFACE_Y (tecla H = guía del carril y ejes). */
 const MODELS = {
-  nami:       { file: 'modelos/nami.glb',            scale: 1, fitHeight: 1.4,  position: [-0.5, 0, 0.5], rotationY: Math.PI/2, placeholderScale: 1 },
-  habitacion: { file: 'modelos/habitacion_mesa.glb', scale: 1, fitHeight: null, position: [0, 0, 0], rotationY: Math.PI/2,       placeholderScale: 1, scenery: true },
-  sala:       { file: 'modelos/sala_mesa.glb',       scale: 1, fitHeight: null, position: [0, -2, 0], rotationY: Math.PI/2,       placeholderScale: 1, scenery: true },
+  nami:       { file: 'modelos/nami.glb',            scale: 1, fitHeight: 1.4,  position: [0, 0, 0], rotationY: Math.PI, placeholderScale: 1 },
+  habitacion: { file: 'modelos/habitacion_mesa.glb', scale: 1, fitHeight: null, position: [0, 0, 0], rotationY: 0,       placeholderScale: 1, scenery: true },
+  sala:       { file: 'modelos/sala_mesa.glb',       scale: 1, fitHeight: null, position: [0, 0, 0], rotationY: 0,       placeholderScale: 1, scenery: true },
   cochinilla: { file: 'modelos/cochinilla.glb',      scale: 1, fitHeight: 0.45, position: [0, 0, 0], rotationY: 0,       placeholderScale: 1 },
-  arana:      { file: 'modelos/arana.glb',           scale: 1, fitHeight: 0.40, position: [0, 0, 0], rotationY: Math.PI/2,       placeholderScale: 1 },
-  piedra:     { file: 'modelos/piedra.glb',          scale: 1, fitHeight: CONFIG.ROCK_HEIGHT, position: [0, 0, 0], rotationY: Math.PI/2, placeholderScale: 1 },
-  mora:       { file: 'modelos/mora.glb',            scale: 1, fitHeight: 0.4,  position: [0, 0, 0], rotationY: Math.PI/2,       placeholderScale: 1 },
+  arana:      { file: 'modelos/arana.glb',           scale: 1, fitHeight: 0.40, position: [0, 0, 0], rotationY: 0,       placeholderScale: 1 },
+  cocina:     { file: 'modelos/cocina_mesa.glb',      scale: 1, fitHeight: null, position: [0, 0, 0], rotationY: 0,       placeholderScale: 1, scenery: true },
+  caracol:    { file: 'modelos/caracoles.glb',       scale: 1, fitHeight: 0.60, position: [0, 0, 0], rotationY: 0,       placeholderScale: 1 },
+  piedra:     { file: 'modelos/piedra.glb',          scale: 1, fitHeight: CONFIG.ROCK_HEIGHT, position: [0, 0, 0], rotationY: 0, placeholderScale: 1 },
+  mora:       { file: 'modelos/mora.glb',            scale: 1, fitHeight: 0.4,  position: [0, 0, 0], rotationY: 0,       placeholderScale: 1 },
 };
 
 /* 🗺 Niveles */
 const LEVELS = [
   { num: 1, name: 'La mesa de la habitación', room: 'habitacion', enemy: 'cochinilla', enemyPlural: 'cochinillas',
     burst: 0xc9ced8, wobble: 'hop', surviveSeconds: SURVIVE_SECONDS_NIVEL_1,
+    spawnZ: NIVEL_1.SPAWN_Z ?? CONFIG.SPAWN_Z, attackRange: NIVEL_1.ATTACK_RANGE ?? CONFIG.ATTACK_RANGE, enemyHits: NIVEL_1.ENEMY_HITS ?? 1, knockback: NIVEL_1.KNOCKBACK ?? 0,
     enemySpeed: NIVEL_1.ENEMY_SPEED, rockSpeed: NIVEL_1.ROCK_SPEED, spawnMin: NIVEL_1.SPAWN_MIN, spawnMax: NIVEL_1.SPAWN_MAX,
     rockChance: NIVEL_1.ROCK_CHANCE, maxLeaks: NIVEL_1.MAX_LEAKS,
     intro: 'Cochinillas en la mesa',
     winText: 'Nami ya se siente más segura en su nuevo hogar.' },
   { num: 2, name: 'La mesa de la sala', room: 'sala', enemy: 'arana', enemyPlural: 'arañas',
     burst: 0x7a5640, wobble: 'scuttle', surviveSeconds: SURVIVE_SECONDS_NIVEL_2,
+    spawnZ: NIVEL_2.SPAWN_Z ?? CONFIG.SPAWN_Z, attackRange: NIVEL_2.ATTACK_RANGE ?? CONFIG.ATTACK_RANGE, enemyHits: NIVEL_2.ENEMY_HITS ?? 1, knockback: NIVEL_2.KNOCKBACK ?? 0,
     enemySpeed: NIVEL_2.ENEMY_SPEED, rockSpeed: NIVEL_2.ROCK_SPEED, spawnMin: NIVEL_2.SPAWN_MIN, spawnMax: NIVEL_2.SPAWN_MAX,
     rockChance: NIVEL_2.ROCK_CHANCE, maxLeaks: NIVEL_2.MAX_LEAKS,
     intro: 'Las arañas son más rápidas',
     winText: 'Nami ya conoce la sala y las arañas no volverán a asustarla.' },
+  { num: 3, name: 'La mesa de la cocina', room: 'cocina', enemy: 'caracol', enemyPlural: 'caracoles',
+    burst: 0xb58a5a, wobble: 'slither', surviveSeconds: SURVIVE_SECONDS_NIVEL_3,
+    spawnZ: NIVEL_3.SPAWN_Z ?? CONFIG.SPAWN_Z, attackRange: NIVEL_3.ATTACK_RANGE ?? CONFIG.ATTACK_RANGE, enemyHits: NIVEL_3.ENEMY_HITS ?? 1, knockback: NIVEL_3.KNOCKBACK ?? 0,
+    enemySpeed: NIVEL_3.ENEMY_SPEED, rockSpeed: NIVEL_3.ROCK_SPEED, spawnMin: NIVEL_3.SPAWN_MIN, spawnMax: NIVEL_3.SPAWN_MAX,
+    rockChance: NIVEL_3.ROCK_CHANCE, maxLeaks: NIVEL_3.MAX_LEAKS,
+    intro: 'Los caracoles resisten dos golpes',
+    winText: 'Nami ya domina toda la casa. ¡Su nuevo hogar es por fin suyo!' },
 ];
 
 /* ═══════════════════════════════════════════════════════════════
@@ -311,6 +335,31 @@ function buildAranaPlaceholder() {      // mira hacia +Z, 8 patas animables
   return g;
 }
 
+function buildCaracolPlaceholder() {     // mira hacia +Z; la concha se oscurece al recibir el primer golpe
+  const g = new THREE.Group();
+  const skin = mat(0xd8c7a3, { roughness: 0.55 });
+  const shellMat = mat(0xb5703c, { roughness: 0.5 });
+  g.userData.shellMat = shellMat;
+  const foot = ellipsoid(0.22, 0.09, 0.62, skin); foot.position.set(0, 0.09, 0); g.add(foot);
+  const neck = ellipsoid(0.15, 0.17, 0.2, skin); neck.position.set(0, 0.24, 0.45); g.add(neck);
+  const head = ellipsoid(0.14, 0.13, 0.16, skin); head.position.set(0, 0.3, 0.6); g.add(head);
+  g.userData.stalks = [];
+  for (const sx of [-1, 1]) {
+    const pivot = new THREE.Group(); pivot.position.set(sx * 0.07, 0.38, 0.62);
+    const stalk = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.022, 0.3, 6), skin));
+    stalk.position.set(0, 0.15, 0.05); stalk.rotation.set(0.35, 0, -sx * 0.25);
+    const eye = ellipsoid(0.04, 0.04, 0.04, mat(0x111111, { roughness: 0.3 })); eye.position.set(-sx * 0.012, 0.31, 0.1);
+    pivot.add(stalk, eye); g.add(pivot); g.userData.stalks.push(pivot);
+  }
+  const shell = ellipsoid(0.33, 0.34, 0.33, shellMat); shell.position.set(0, 0.42, -0.15); g.add(shell);
+  const ringMat = mat(0x7a4524, { roughness: 0.6 });
+  for (const sx of [-1, 1]) for (const [r, x] of [[0.22, 0.27], [0.12, 0.31]]) {
+    const ring = shadowed(new THREE.Mesh(new THREE.TorusGeometry(r, 0.03, 8, 22), ringMat));
+    ring.rotation.y = Math.PI / 2; ring.position.set(sx * x, 0.42, -0.15); g.add(ring);
+  }
+  return g;
+}
+
 function buildPiedraPlaceholder() {
   const g = new THREE.Group();
   const rock = shadowed(new THREE.Mesh(new THREE.DodecahedronGeometry(0.5, 0), mat(0x8d8a84, { roughness: 0.95, flatShading: true })));
@@ -331,11 +380,12 @@ function buildMoraPlaceholder() {
   return g;
 }
 
-/* Escenarios de respaldo: 'habitacion' (cálida, mantel a cuadros) y 'sala' (verdosa, camino de mesa rayado, sofá y lámpara) */
+/* Escenarios de respaldo: 'habitacion' (cálida, mantel a cuadros), 'cocina' (azulejo claro, mantel azul, alacena y refrigerador) y 'sala' (verdosa, camino de mesa rayado, sofá y lámpara) */
 function buildRoomPlaceholder(variant) {
-  const sala = variant === 'sala';
+  const sala = variant === 'sala', cocina = variant === 'cocina';
   const pal = sala
     ? { floor: 0x5b5f66, wall: 0xc7d6d0, wall2: 0xb8cac3, top: 0x4a3022, leg: 0x33200f, window: 0xffe3b8 }
+    : cocina ? { floor: 0xc9b79a, wall: 0xdce9ec, wall2: 0xcfe0e4, top: 0xb98a55, leg: 0x8a6338, window: 0xfff4d6 }
     : { floor: 0xa9794c, wall: 0xf3e4c8, wall2: 0xefdcbc, top: 0x8c5a35, leg: 0x6e4526, window: 0xd9f0ff };
   const g = new THREE.Group();
   const plane = (w, h, color, o = {}) => new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat(color, o));
@@ -355,7 +405,7 @@ function buildRoomPlaceholder(variant) {
     c.fillStyle = 'rgba(63,108,84,.25)'; c.fillRect(54, 0, 20, 128);
   } else {                                  // mantel a cuadros
     c.fillStyle = '#f4ead2'; c.fillRect(0, 0, 128, 128);
-    c.fillStyle = 'rgba(184,100,60,.32)'; c.fillRect(0, 0, 64, 128); c.fillRect(0, 0, 128, 64);
+    c.fillStyle = cocina ? 'rgba(60,110,170,.38)' : 'rgba(184,100,60,.32)'; c.fillRect(0, 0, 64, 128); c.fillRect(0, 0, 128, 64);
   }
   const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(sala ? 1 : 6, sala ? 14 : 50); tex.anisotropy = 8;
@@ -380,6 +430,15 @@ function buildRoomPlaceholder(variant) {
     const shade = shadowed(new THREE.Mesh(new THREE.ConeGeometry(0.9, 1.1, 20, 1, true), new THREE.MeshStandardMaterial({ color: 0xffe9b0, emissive: 0xffd27a, emissiveIntensity: 0.8, side: THREE.DoubleSide })), false, false);
     shade.position.set(12.5, S + 2.6, -14); g.add(shade);
     const tvUnit = box(1.4, 1.6, 10, 0x2a2420); tvUnit.position.set(15.2, S - 2.4, -26); g.add(tvUnit);
+  } else if (cocina) {
+    const base = box(2.6, 3.0, 40, 0xece6d6); base.position.set(-14.6, S - 1.7, -22); g.add(base);
+    const counter = box(2.8, 0.2, 40, 0x5c5f63); counter.position.set(-14.5, S - 0.1, -22); g.add(counter);
+    const upper = box(1.4, 2.2, 36, 0xd9c9a3); upper.position.set(-15.2, S + 4.6, -22); g.add(upper);
+    const fridge = box(2.8, 6.6, 3.4, 0xd3d8da); fridge.position.set(14.4, S + 0.1, -32); g.add(fridge);
+    const handle = box(0.1, 2, 0.12, 0x888e92); handle.position.set(12.95, S + 1.2, -30.7); g.add(handle);
+    const cord = box(0.04, 3.5, 0.04, 0x222222); cord.position.set(0, S + 8.0, -12); g.add(cord);
+    const lamp = shadowed(new THREE.Mesh(new THREE.ConeGeometry(0.9, 0.7, 20, 1, true), new THREE.MeshStandardMaterial({ color: 0xe4572e, emissive: 0xff9966, emissiveIntensity: 0.5, side: THREE.DoubleSide })), false, false);
+    lamp.position.set(0, S + 6.0, -12); g.add(lamp);
   } else {
     const shelf = box(1.2, 0.2, 9, 0x6e4526); shelf.position.set(15.4, S + 3.2, -18); g.add(shelf);
     ['#c0584a', '#3f7d6a', '#d9a441', '#5b6fb5', '#a45c8f'].forEach((col, i) => {
@@ -390,9 +449,9 @@ function buildRoomPlaceholder(variant) {
 }
 
 const PLACEHOLDERS = {
-  nami: buildNamiPlaceholder, cochinilla: buildCochinillaPlaceholder, arana: buildAranaPlaceholder,
+  nami: buildNamiPlaceholder, cochinilla: buildCochinillaPlaceholder, arana: buildAranaPlaceholder, caracol: buildCaracolPlaceholder,
   piedra: buildPiedraPlaceholder, mora: buildMoraPlaceholder,
-  habitacion: () => buildRoomPlaceholder('habitacion'), sala: () => buildRoomPlaceholder('sala'),
+  habitacion: () => buildRoomPlaceholder('habitacion'), sala: () => buildRoomPlaceholder('sala'), cocina: () => buildRoomPlaceholder('cocina'),
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -466,6 +525,7 @@ const sfx = {
   swing: () => beep(520, 0.12, 'sawtooth', 0.035, 180),
   squash: () => { beep(300, 0.1, 'square', 0.06, 90); beep(700, 0.06, 'triangle', 0.04, 900); },
   jump: () => beep(260, 0.18, 'sine', 0.08, 620),
+  clank: () => { beep(900, 0.08, 'square', 0.06, 380); beep(1300, 0.05, 'triangle', 0.04, 700); },
   hurt: () => beep(180, 0.3, 'sawtooth', 0.07, 60),
   berry: () => [660, 880, 1100].forEach((f, i) => setTimeout(() => beep(f, 0.15, 'triangle', 0.06), i * 90)),
   boom: () => beep(160, 0.6, 'sawtooth', 0.09, 30),
@@ -483,7 +543,7 @@ const entities = [];         // enemigos y piedras activos
 const dying = [], particles = [], fxList = [];
 let berry = null, finale = null, room = null, debugGroup = null;
 
-const nami = { y: 0, vy: 0, grounded: true, attackT: -1, cooldown: 0, hurt: 0, obj: null, anim: null, arms: null };
+const nami = { swingId: 0, y: 0, vy: 0, grounded: true, attackT: -1, cooldown: 0, hurt: 0, obj: null, anim: null, arms: null };
 
 const $ = id => document.getElementById(id);
 const el = { hud: $('hud'), kills: $('kills'), bar: $('barfill'), timeTxt: $('timeTxt'), leaks: [...document.querySelectorAll('#leaks i')],
@@ -526,18 +586,19 @@ function spawn(kind) {
   const model = spawnModel(kind === 'piedra' ? 'piedra' : level.enemy);
   const holder = new THREE.Group();     // el holder se anima (aparición, correteo); el modelo queda intacto
   holder.add(model);
-  holder.position.set(0, S, CONFIG.SPAWN_Z);
+  holder.position.set(0, S, level.spawnZ);
   holder.scale.setScalar(0.01);
   scene.add(holder);
-  entities.push({ kind, obj: holder, model, z: CONFIG.SPAWN_Z, age: 0, speed: kind === 'piedra' ? level.rockSpeed : level.enemySpeed });
+  entities.push({ kind, obj: holder, model, z: level.spawnZ, age: 0, hp: kind === 'enemy' ? level.enemyHits : 1, hitT: 0, lastSwing: -1,
+    speed: kind === 'piedra' ? level.rockSpeed : level.enemySpeed });
 }
 
 // Evita que un objeto más veloz alcance a otro (y lo atraviese) antes de llegar a Nami
 function wouldOverlap(speed) {
   for (const e of entities) {
-    const dz = e.z - CONFIG.SPAWN_Z;
+    const dz = e.z - level.spawnZ;
     if (dz > 0 && speed > e.speed) {
-      const catchZ = CONFIG.SPAWN_Z + speed * dz / (speed - e.speed);
+      const catchZ = level.spawnZ + speed * dz / (speed - e.speed);
       if (catchZ < CONFIG.NAMI_Z + 1.2) return true;
     }
   }
@@ -576,7 +637,13 @@ function updateEntities(dt) {
     e.age += dt;
     e.z += e.speed * dt;
     e.obj.position.z = e.z;
-    e.obj.scale.setScalar(Math.min(1, easeOutBack(Math.min(e.age / 0.4, 1)) || 0.01));
+    e.hitT = Math.max(0, e.hitT - dt);
+    {
+      const sc = Math.min(1, easeOutBack(Math.min(e.age / 0.4, 1)) || 0.01);       // aparición
+      const pulse = Math.sin(Math.min(e.hitT / 0.25, 1) * Math.PI);                 // sacudida al recibir un golpe
+      const sl = level.wobble === 'slither' && e.kind === 'enemy' ? Math.sin(e.age * 5) : 0;   // se arrastra
+      e.obj.scale.set(sc * (1 + pulse * 0.25), sc * (1 - pulse * 0.3 - sl * 0.04), sc * (1 + pulse * 0.2 + sl * 0.06));
+    }
 
     if (e.kind === 'enemy') {                 // animación de caminar
       if (level.wobble === 'scuttle') {
@@ -584,6 +651,11 @@ function updateEntities(dt) {
         e.obj.rotation.z = Math.sin(e.age * 30) * 0.05;
         const legs = e.model.userData.legs;
         if (legs) for (const l of legs) l.pivot.rotation.y = l.base + Math.sin(e.age * 34 + l.phase) * 0.35;
+      } else if (level.wobble === 'slither') {
+        e.obj.position.y = S;
+        e.obj.rotation.z = Math.sin(e.age * 3.5) * 0.04;
+        const st = e.model.userData.stalks;
+        if (st) st.forEach((p, i) => { p.rotation.z = Math.sin(e.age * 6 + i * 2) * 0.25; });
       } else {
         e.obj.position.y = S + Math.abs(Math.sin(e.age * 16)) * 0.04;
         e.obj.rotation.z = Math.sin(e.age * 14) * 0.07;
@@ -592,10 +664,16 @@ function updateEntities(dt) {
 
     if (state === 'playing') {
       if (e.kind === 'enemy') {
-        if (attackActive() && e.z >= nz - CONFIG.ATTACK_RANGE && e.z <= nz - CONFIG.LEAK_DISTANCE + 0.4) {
-          kills++; el.kills.textContent = kills;
-          squashEntity(e);
-          continue;
+        if (attackActive() && e.lastSwing !== nami.swingId && e.z >= nz - level.attackRange && e.z <= nz - CONFIG.LEAK_DISTANCE + 0.4) {
+          e.lastSwing = nami.swingId;                       // cada manotazo cuenta una sola vez por enemigo
+          e.hp--;
+          if (e.hp <= 0) { kills++; el.kills.textContent = kills; squashEntity(e); continue; }
+          // golpe que no elimina: el enemigo se sacude, retrocede y su concha se oscurece
+          e.hitT = 0.25;
+          e.z -= level.knockback; e.obj.position.z = e.z;
+          const sm = e.model.userData.shellMat; if (sm) sm.color.setHex(0x5a3a22);
+          const hp = e.obj.position.clone(); hp.y += 0.4;
+          burst(hp, level.burst, 8, 2.2); sfx.clank();
         }
         if (e.z >= nz - CONFIG.LEAK_DISTANCE) {            // se acercó demasiado a Nami
           leaks++;
@@ -628,7 +706,7 @@ function jump() {
 }
 function attack() {
   if (!(state === 'playing' || state === 'finale') || nami.cooldown > 0) return;
-  nami.attackT = 0; nami.cooldown = CONFIG.ATTACK_COOLDOWN;
+  nami.attackT = 0; nami.cooldown = CONFIG.ATTACK_COOLDOWN; nami.swingId++;
   sfx.swing();
 }
 
@@ -725,7 +803,7 @@ function updateFinale(dt) {
       f.phase = 'done'; state = 'won'; wonAt = performance.now();
       const next = LEVELS[levelIndex + 1];
       el.bannerTitle.textContent = `¡Nivel ${level.num} Completado!`;
-      el.bannerText.textContent = level.winText + (next ? ` Enter o clic: Nivel ${next.num}.` : ' ¡Pronto habrá más niveles! Enter o clic para volver al Nivel 1.');
+      el.bannerText.textContent = level.winText + (next ? ` Enter o clic: Nivel ${next.num}.` : ' ¡Completaste el juego! Enter o clic para volver al Nivel 1.');
       el.banner.classList.remove('on'); void el.banner.offsetWidth; el.banner.classList.add('on');
       sfx.win();
     }
@@ -803,7 +881,7 @@ addEventListener('keydown', e => {
   else if (e.code === 'Space') { e.preventDefault(); if (state === 'playing' || state === 'finale') attack(); else tryStart(); }
   else if (e.code === 'Enter' || e.code === 'KeyR') tryStart();
   else if (e.code === 'KeyH') toggleDebug();
-  else if (state === 'menu' && (e.code === 'Digit1' || e.code === 'Digit2')) selectLevel(Number(e.code.slice(-1)) - 1);
+  else if (state === 'menu' && /^Digit[1-3]$/.test(e.code)) selectLevel(Number(e.code.slice(-1)) - 1);
 });
 renderer.domElement.addEventListener('pointerdown', e => {
   if (e.button !== 0) return;
@@ -819,13 +897,14 @@ renderer.domElement.addEventListener('touchend', e => {
 }, { passive: true });
 
 function toggleDebug() {
+  if (debugGroup) { const wasOn = debugGroup.visible; scene.remove(debugGroup); debugGroup = null; if (wasOn) return; }
   if (!debugGroup) {
     debugGroup = new THREE.Group();
     const lane = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 40), new THREE.MeshBasicMaterial({ color: 0x6dff9a, transparent: true, opacity: 0.35, depthWrite: false }));
     lane.rotation.x = -Math.PI / 2; lane.position.set(0, S + 0.02, -20 + CONFIG.NAMI_Z);
-    const zone = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.5, CONFIG.ATTACK_RANGE - CONFIG.LEAK_DISTANCE),
+    const zone = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.5, level.attackRange - CONFIG.LEAK_DISTANCE),
       new THREE.MeshBasicMaterial({ color: 0xffd34d, wireframe: true }));
-    zone.position.set(0, S + 0.25, CONFIG.NAMI_Z - (CONFIG.ATTACK_RANGE + CONFIG.LEAK_DISTANCE) / 2);
+    zone.position.set(0, S + 0.25, CONFIG.NAMI_Z - (level.attackRange + CONFIG.LEAK_DISTANCE) / 2);
     debugGroup.add(lane, zone, new THREE.AxesHelper(2));
     debugGroup.visible = false; scene.add(debugGroup);
   }
@@ -903,7 +982,7 @@ function loop() {
   nami.arms = namiModel.userData.arms || null;
   scene.add(nami.obj);
 
-  const names = { nami: 'Nami', habitacion: 'Habitación', sala: 'Sala', cochinilla: 'Cochinilla', arana: 'Araña', piedra: 'Piedra', mora: 'Mora' };
+  const names = { nami: 'Nami', habitacion: 'Habitación', sala: 'Sala', cocina: 'Cocina', cochinilla: 'Cochinilla', arana: 'Araña', caracol: 'Caracol', piedra: 'Piedra', mora: 'Mora' };
   el.status.innerHTML = 'Modelos: ' + Object.keys(MODELS).map(k =>
     templates[k].placeholder ? `<s>${names[k]} (respaldo)</s>` : `<b>${names[k]} ✓</b>`).join(' · ')
     + (Object.values(templates).every(t => t.placeholder)
