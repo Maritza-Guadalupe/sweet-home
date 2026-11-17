@@ -3,11 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nami · Nivel 1 — La mesa</title>
+<title>Nami · Infinite Runner</title>
 <style>
-  :root{
-    --sage:#8fb996; --sage-d:#46704f; --clay:#b8643c; --cream:#fff6e3; --ink:#2b2a33; --berry:#3d5af1;
-  }
+  :root{ --sage:#8fb996; --sage-d:#46704f; --clay:#b8643c; --cream:#fff6e3; --ink:#2b2a33; }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;overflow:hidden;background:#241f2a;color:var(--cream);
     font-family:"Avenir Next Rounded","Trebuchet MS","Segoe UI",system-ui,sans-serif;user-select:none;-webkit-user-select:none}
@@ -16,21 +14,26 @@
   /* HUD */
   #hud{position:fixed;inset:0;pointer-events:none;display:none}
   #hud.on{display:block}
-  .hud-top{position:absolute;top:14px;left:16px;right:16px;display:flex;align-items:center;gap:16px;
-    padding-top:env(safe-area-inset-top,0)}
+  .hud-top{position:absolute;top:14px;left:16px;right:16px;display:flex;align-items:center;gap:16px;padding-top:env(safe-area-inset-top,0)}
   .pill{background:rgba(36,31,42,.62);backdrop-filter:blur(4px);border-radius:999px;padding:7px 14px;font-weight:700;font-size:15px;white-space:nowrap}
   #bar{flex:1;height:14px;background:rgba(36,31,42,.55);border-radius:999px;overflow:hidden;position:relative;border:2px solid rgba(255,246,227,.35)}
   #barfill{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--sage),#cfe8b0);border-radius:999px}
   #leaks{display:flex;gap:7px;align-items:center}
   #leaks i{width:18px;height:18px;border-radius:50%;border:3px solid #d9d1c0;background:transparent;transition:.2s}
   #leaks i.full{background:#e0483c;border-color:#e0483c;transform:scale(1.15)}
-  .hint{position:absolute;bottom:16px;left:0;right:0;text-align:center;font-size:14px;opacity:.85;
-    padding-bottom:env(safe-area-inset-bottom,0)}
+  .hint{position:absolute;bottom:16px;left:0;right:0;text-align:center;font-size:14px;opacity:.85;padding-bottom:env(safe-area-inset-bottom,0)}
   .hint kbd{background:rgba(255,246,227,.16);border:1px solid rgba(255,246,227,.4);border-radius:6px;padding:2px 8px;margin:0 2px;font-family:inherit;font-weight:700}
 
+  /* Título de nivel al empezar */
+  #levelTitle{position:fixed;left:0;right:0;top:22%;text-align:center;pointer-events:none;opacity:0}
+  #levelTitle.on{animation:lt 2.8s ease both}
+  #levelTitle small{display:block;font-size:clamp(16px,3vw,24px);color:var(--sage);font-weight:700;margin-bottom:4px}
+  #levelTitle b{font-size:clamp(28px,6vw,56px);text-shadow:0 4px 18px rgba(0,0,0,.6)}
+  @keyframes lt{0%{opacity:0;transform:translateY(14px)}15%{opacity:1;transform:none}75%{opacity:1}100%{opacity:0}}
+
   /* Pantallas */
-  .screen{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
-    text-align:center;padding:24px;background:radial-gradient(ellipse at center,rgba(36,31,42,.55),rgba(24,20,30,.92))}
+  .screen{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:24px;
+    background:radial-gradient(ellipse at center,rgba(36,31,42,.55),rgba(24,20,30,.92))}
   .screen.on{display:flex}
   .screen h1{font-size:clamp(34px,7vw,68px);margin:0 0 6px;line-height:1.05;letter-spacing:-.02em;color:var(--cream)}
   .screen h1 small{display:block;font-size:.34em;letter-spacing:0;color:var(--sage);font-weight:700;margin-bottom:8px}
@@ -39,25 +42,28 @@
     cursor:pointer;box-shadow:0 5px 0 #7d3d20;transition:transform .08s,box-shadow .08s}
   .btn:active{transform:translateY(4px);box-shadow:0 1px 0 #7d3d20}
   .btn[disabled]{opacity:.5;cursor:wait}
+  #levelPick{display:flex;gap:10px;margin-top:16px}
+  .chip{padding:8px 18px;border-radius:999px;border:2px solid rgba(255,246,227,.4);background:transparent;color:var(--cream);font:inherit;font-weight:700;cursor:pointer}
+  .chip.on{background:var(--sage);border-color:var(--sage);color:var(--ink)}
   .keys{margin-top:18px;display:grid;grid-template-columns:auto auto;gap:8px 16px;text-align:left;font-size:15px;color:#ece2cc}
   .keys kbd{background:rgba(255,246,227,.14);border:1px solid rgba(255,246,227,.4);border-radius:6px;padding:2px 9px;font-family:inherit;font-weight:700}
-  #status{margin-top:18px;font-size:12.5px;opacity:.75;max-width:60ch;line-height:1.6}
+  #status{margin-top:18px;font-size:12.5px;opacity:.75;max-width:64ch;line-height:1.6}
   #status b{color:var(--sage)} #status s{color:#e8b25a;text-decoration:none}
   #lostReason{color:#ffb4a3;font-weight:700}
 
   /* Letrero de nivel completado */
-  #banner{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;pointer-events:none}
+  #banner{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;padding:20px;text-align:center}
   #banner.on{display:flex}
-  #banner h2{margin:0;font-size:clamp(36px,8vw,84px);color:var(--cream);text-align:center;line-height:1.05;
+  #banner h2{margin:0;font-size:clamp(36px,8vw,84px);color:var(--cream);line-height:1.05;
     text-shadow:0 4px 0 var(--sage-d),0 10px 30px rgba(0,0,0,.5);animation:pop .7s cubic-bezier(.2,1.5,.4,1) both}
-  #banner p{margin:14px 0 0;font-size:20px;font-weight:700;color:#d8ecd0;text-shadow:0 2px 8px rgba(0,0,0,.6);animation:pop .7s .25s cubic-bezier(.2,1.5,.4,1) both}
+  #banner p{margin:14px 0 0;max-width:40ch;font-size:20px;font-weight:700;color:#d8ecd0;text-shadow:0 2px 8px rgba(0,0,0,.6);animation:pop .7s .25s cubic-bezier(.2,1.5,.4,1) both}
   @keyframes pop{from{transform:scale(.3) rotate(-4deg);opacity:0}to{transform:none;opacity:1}}
 
   #flash{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .35s}
   #flash.hit{background:radial-gradient(ellipse at center,transparent 30%,rgba(224,72,60,.55));opacity:1;transition:none}
   #flash.blue{background:radial-gradient(ellipse at center,rgba(150,180,255,.9),rgba(61,90,241,.35));opacity:1;transition:none}
 
-  @media (prefers-reduced-motion:reduce){#banner h2,#banner p{animation:none}}
+  @media (prefers-reduced-motion:reduce){#banner h2,#banner p,#levelTitle.on{animation:none}#levelTitle.on{opacity:1}}
 </style>
 <script type="importmap">
 { "imports": {
@@ -73,20 +79,25 @@
     <div class="pill">Aplastadas: <span id="kills">0</span></div>
     <div id="bar"><span id="barfill"></span></div>
     <div class="pill" id="timeTxt">30 s</div>
-    <div class="pill" title="Cochinillas que llegaron hasta Nami"><span id="leaks"><i></i><i></i><i></i></span></div>
+    <div class="pill" title="Bichos que llegaron hasta Nami"><span id="leaks"><i></i><i></i><i></i></span></div>
   </div>
   <div class="hint"><kbd>↑</kbd> saltar piedras &nbsp;·&nbsp; <kbd>Espacio</kbd> o clic: manotazo</div>
 </div>
 
-<div id="banner"><h2>¡Nivel 1 Completado!</h2><p>Nami ya se siente más segura en su nuevo hogar. Enter para repetir.</p></div>
+<div id="levelTitle"><small id="ltNum">Nivel 1</small><b id="ltName">La mesa</b></div>
+<div id="banner"><h2 id="bannerTitle">¡Nivel 1 Completado!</h2><p id="bannerText"></p></div>
 <div id="flash"></div>
 
 <div class="screen on" id="screen">
-  <h1><small>Nivel 1 · La mesa de la habitación</small>Nami</h1>
+  <h1 id="screenTitle"><small>Nami · Infinite Runner</small>Nami</h1>
   <p id="screenText">Cargando modelos…</p>
+  <div id="levelPick" style="display:none">
+    <button class="chip on" data-level="0">Nivel 1</button>
+    <button class="chip" data-level="1">Nivel 2</button>
+  </div>
   <div class="keys" id="keysBox" style="display:none">
     <kbd>↑</kbd><span>Saltar las piedras</span>
-    <kbd>Espacio / clic</kbd><span>Manotazo a las cochinillas</span>
+    <kbd>Espacio / clic</kbd><span>Manotazo a los bichos</span>
   </div>
   <p id="lostReason"></p>
   <button class="btn" id="startBtn" disabled>Cargando…</button>
@@ -102,19 +113,20 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
    ▌ VARIABLES EDITABLES
    ═══════════════════════════════════════════════════════════════ */
 
-// ⏱ Segundos que hay que sobrevivir antes del final del nivel
-const SURVIVE_SECONDS = 30;
+// ⏱ Segundos que hay que sobrevivir en cada nivel antes del final
+const SURVIVE_SECONDS_NIVEL_1 = 30;
+const SURVIVE_SECONDS_NIVEL_2 = 30;
 
+// ⚙ Parámetros por nivel (velocidades en unidades/seg)
+const NIVEL_1 = { ENEMY_SPEED: 7,  ROCK_SPEED: 7, SPAWN_MIN: 1.3, SPAWN_MAX: 2.3, ROCK_CHANCE: 0.4, MAX_LEAKS: 3 };
+const NIVEL_2 = { ENEMY_SPEED: 11, ROCK_SPEED: 8, SPAWN_MIN: 1.0, SPAWN_MAX: 1.9, ROCK_CHANCE: 0.4, MAX_LEAKS: 3 };   // arañas más rápidas
+
+// ⚙ Parámetros comunes
 const CONFIG = {
-  SURFACE_Y: 2.5,            // Altura (Y) de la superficie de la mesa donde ocurre todo el juego
-  NAMI_Z: 2.0,               // Posición de Nami a lo largo del carril
-  ENEMY_SPEED: 7,          // Velocidad constante de cochinillas y piedras (unidades/seg)
+  SURFACE_Y: 0,            // Altura (Y) de la superficie de la mesa donde ocurre todo el juego
+  NAMI_Z: 0,               // Posición de Nami a lo largo del carril
   SPAWN_Z: -30,            // Dónde aparecen los obstáculos (lejos de Nami)
-  SPAWN_MIN: 1.3,          // Segundos mínimos entre apariciones
-  SPAWN_MAX: 2.3,          // Segundos máximos entre apariciones
-  ROCK_CHANCE: 0.4,        // Probabilidad de que salga una piedra en vez de una cochinilla
-  MAX_LEAKS: 3,            // Cochinillas que pueden llegar a Nami antes del Game Over
-  LEAK_DISTANCE: 1.0,      // A qué distancia de Nami cuenta una cochinilla como "llegó"
+  LEAK_DISTANCE: 1.0,      // A qué distancia de Nami cuenta un bicho como "llegó"
   ATTACK_RANGE: 2.8,       // Alcance del manotazo
   ATTACK_DURATION: 0.30,   // Duración de la animación del manotazo
   ATTACK_COOLDOWN: 0.38,   // Tiempo mínimo entre manotazos
@@ -125,24 +137,42 @@ const CONFIG = {
 };
 
 // 🎥 Cámara
-const CAMERA = { position: [0, 3.5, 6.5], lookAt: [0, 1.0, -2], fov: 60 };
+const CAMERA = { position: [1.3, 2.6, 5.2], lookAt: [0, 0.8, -6], fov: 55 };
 
 /* 📦 Modelos .glb
    file         → ruta del archivo
    scale        → multiplicador de escala (1 = tamaño automático según fitHeight)
    fitHeight    → altura en unidades a la que se ajusta el modelo automáticamente (null = tamaño original)
    position     → desplazamiento [x, y, z] extra para ajustar el modelo
-   rotationY    → giro en radianes (Nami debe mirar hacia -Z; si tu modelo mira al revés, cambia Math.PI por 0)
+   rotationY    → giro en radianes (Nami debe mirar hacia -Z; los bichos hacia +Z)
    placeholderScale → escala de la figura de respaldo si el .glb no existe
-   La habitación NO se autoajusta: mueve position[1] hasta que la superficie de la mesa quede en y = CONFIG.SURFACE_Y
-   (pulsa la tecla H en el juego para ver una guía del carril y los ejes). */
+   Los escenarios (habitacion, sala) NO se autoajustan: mueve position[1] hasta que la superficie
+   de la mesa quede en y = CONFIG.SURFACE_Y (tecla H = guía del carril y ejes). */
 const MODELS = {
-  nami:       { file: 'modelos/nami.glb',            scale: 1, fitHeight: 1.4,  position: [-0.5, 0, 0.5], rotationY: Math.PI, placeholderScale: 1 },
-  habitacion: { file: 'modelos/habitacion_mesa.glb', scale: 1, fitHeight: null, position: [0, 0, 0], rotationY: Math.PI/2,       placeholderScale: 1 },
+  nami:       { file: 'modelos/nami.glb',            scale: 1, fitHeight: 1.4,  position: [0, 0, 0], rotationY: Math.PI, placeholderScale: 1 },
+  habitacion: { file: 'modelos/habitacion_mesa.glb', scale: 1, fitHeight: null, position: [0, 0, 0], rotationY: 0,       placeholderScale: 1, scenery: true },
+  sala:       { file: 'modelos/sala_mesa.glb',       scale: 1, fitHeight: null, position: [0, 0, 0], rotationY: 0,       placeholderScale: 1, scenery: true },
   cochinilla: { file: 'modelos/cochinilla.glb',      scale: 1, fitHeight: 0.45, position: [0, 0, 0], rotationY: 0,       placeholderScale: 1 },
+  arana:      { file: 'modelos/arana.glb',           scale: 1, fitHeight: 0.40, position: [0, 0, 0], rotationY: 0,       placeholderScale: 1 },
   piedra:     { file: 'modelos/piedra.glb',          scale: 1, fitHeight: CONFIG.ROCK_HEIGHT, position: [0, 0, 0], rotationY: 0, placeholderScale: 1 },
-  mora:       { file: 'modelos/mora.glb',            scale: 1, fitHeight: 0.4,  position: [0, 0, 0], rotationY: Math.PI/2,       placeholderScale: 1 },
+  mora:       { file: 'modelos/mora.glb',            scale: 1, fitHeight: 0.4,  position: [0, 0, 0], rotationY: 0,       placeholderScale: 1 },
 };
+
+/* 🗺 Niveles */
+const LEVELS = [
+  { num: 1, name: 'La mesa de la habitación', room: 'habitacion', enemy: 'cochinilla', enemyPlural: 'cochinillas',
+    burst: 0xc9ced8, wobble: 'hop', surviveSeconds: SURVIVE_SECONDS_NIVEL_1,
+    enemySpeed: NIVEL_1.ENEMY_SPEED, rockSpeed: NIVEL_1.ROCK_SPEED, spawnMin: NIVEL_1.SPAWN_MIN, spawnMax: NIVEL_1.SPAWN_MAX,
+    rockChance: NIVEL_1.ROCK_CHANCE, maxLeaks: NIVEL_1.MAX_LEAKS,
+    intro: 'Cochinillas en la mesa',
+    winText: 'Nami ya se siente más segura en su nuevo hogar.' },
+  { num: 2, name: 'La mesa de la sala', room: 'sala', enemy: 'arana', enemyPlural: 'arañas',
+    burst: 0x7a5640, wobble: 'scuttle', surviveSeconds: SURVIVE_SECONDS_NIVEL_2,
+    enemySpeed: NIVEL_2.ENEMY_SPEED, rockSpeed: NIVEL_2.ROCK_SPEED, spawnMin: NIVEL_2.SPAWN_MIN, spawnMax: NIVEL_2.SPAWN_MAX,
+    rockChance: NIVEL_2.ROCK_CHANCE, maxLeaks: NIVEL_2.MAX_LEAKS,
+    intro: 'Las arañas son más rápidas',
+    winText: 'Nami ya conoce la sala y las arañas no volverán a asustarla.' },
+];
 
 /* ═══════════════════════════════════════════════════════════════
    ▌ ESCENA BÁSICA
@@ -176,8 +206,7 @@ Object.assign(sun.shadow.camera, { left: -8, right: 8, top: 24, bottom: -24, nea
 sun.shadow.bias = -0.0004;
 scene.add(sun, sun.target);
 
-// Luz azul reservada para la mora final (intensidad 0 hasta el final del nivel)
-const berryLight = new THREE.PointLight(0x6f8bff, 0, 9);
+const berryLight = new THREE.PointLight(0x6f8bff, 0, 9);   // luz de la mora (0 hasta el final)
 scene.add(berryLight);
 
 addEventListener('resize', () => {
@@ -199,12 +228,10 @@ const ellipsoid = (rx, ry, rz, m) => {
 
 function buildNamiPlaceholder() {
   const g = new THREE.Group();
-  // maceta
   const pot = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.34, 0.42, 24), mat(0xb8643c)));
   pot.position.y = 0.21; g.add(pot);
   const rim = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.48, 0.1, 24), mat(0xc4714a)));
   rim.position.y = 0.44; g.add(rim);
-  // cuerpo (hojas peludas)
   const leafMat = mat(0x9cc9a0, { roughness: 1 });
   const body = ellipsoid(0.42, 0.5, 0.4, leafMat); body.position.y = 0.95; g.add(body);
   for (let i = 0; i < 7; i++) {
@@ -216,8 +243,7 @@ function buildNamiPlaceholder() {
     const tip = ellipsoid(0.07, 0.05, 0.05, mat(0x8a4b2d));
     tip.position.set(Math.cos(a) * 0.42, 0.88, Math.sin(a) * 0.42); g.add(tip);
   }
-  // carita (Nami mira hacia -Z)
-  for (const sx of [-1, 1]) {
+  for (const sx of [-1, 1]) {            // carita: Nami mira hacia -Z
     const eye = ellipsoid(0.065, 0.085, 0.05, mat(0x1c1b22, { roughness: 0.3 }));
     eye.position.set(sx * 0.16, 1.02, -0.36); g.add(eye);
     const glint = ellipsoid(0.02, 0.02, 0.02, new THREE.MeshBasicMaterial({ color: 0xffffff }));
@@ -225,8 +251,7 @@ function buildNamiPlaceholder() {
     const cheek = ellipsoid(0.07, 0.04, 0.03, mat(0xf0a0a0));
     cheek.position.set(sx * 0.27, 0.93, -0.33); g.add(cheek);
   }
-  // manitas (brazos) con pivote para animar el manotazo
-  g.userData.arms = [];
+  g.userData.arms = [];                  // manitas con pivote
   for (const sx of [-1, 1]) {
     const pivot = new THREE.Group();
     pivot.position.set(sx * 0.4, 0.85, -0.1);
@@ -241,8 +266,7 @@ function buildNamiPlaceholder() {
 function buildCochinillaPlaceholder() {
   const g = new THREE.Group();
   const shell = mat(0x7d8591, { roughness: 0.45 });
-  const sizes = [0.19, 0.23, 0.25, 0.23, 0.18];
-  sizes.forEach((r, i) => {
+  [0.19, 0.23, 0.25, 0.23, 0.18].forEach((r, i) => {
     const seg = ellipsoid(0.24, r * 0.95, 0.15, shell);
     seg.position.set(0, 0.2, -0.3 + i * 0.15);
     g.add(seg);
@@ -257,6 +281,32 @@ function buildCochinillaPlaceholder() {
       const leg = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.16, 4), mat(0x3a3d44)));
       leg.position.set(sx * 0.24, 0.07, -0.1 + l * 0.25); leg.rotation.z = sx * 0.9; g.add(leg);
     }
+  }
+  return g;
+}
+
+function buildAranaPlaceholder() {      // mira hacia +Z, 8 patas animables
+  const g = new THREE.Group();
+  const dark = mat(0x2e2420, { roughness: 0.5 });
+  const abdomen = ellipsoid(0.2, 0.18, 0.26, dark); abdomen.position.set(0, 0.22, -0.2); g.add(abdomen);
+  const mark = ellipsoid(0.06, 0.02, 0.1, new THREE.MeshBasicMaterial({ color: 0xc0301f })); mark.position.set(0, 0.395, -0.2); g.add(mark);
+  const head = ellipsoid(0.14, 0.12, 0.15, mat(0x3b2e28)); head.position.set(0, 0.2, 0.1); g.add(head);
+  for (const [x, y, r] of [[-0.05, 0.25, 0.028], [0.05, 0.25, 0.028], [-0.09, 0.21, 0.02], [0.09, 0.21, 0.02]]) {
+    const eye = ellipsoid(r, r, r, new THREE.MeshBasicMaterial({ color: 0xff3b2a }));
+    eye.position.set(x, y, 0.23); g.add(eye);
+  }
+  const legMat = mat(0x1d1714);
+  g.userData.legs = [];
+  for (const sx of [-1, 1]) for (let i = 0; i < 4; i++) {
+    const pivot = new THREE.Group();
+    pivot.position.set(sx * 0.1, 0.2, (i - 1.5) * 0.075);
+    const up = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.016, 0.26, 5), legMat));
+    up.position.set(sx * 0.175, 0.035, 0); up.rotation.z = -sx * 1.29;
+    const low = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.013, 0.28, 5), legMat));
+    low.position.set(sx * 0.375, -0.075, 0); low.rotation.z = sx * 0.55;
+    pivot.add(up, low); g.add(pivot);
+    const f = (i - 1.5) * 0.33;
+    g.userData.legs.push({ pivot, base: -sx * f, phase: (i % 2) * Math.PI + (sx > 0 ? 0 : Math.PI) });
   }
   return g;
 }
@@ -281,45 +331,68 @@ function buildMoraPlaceholder() {
   return g;
 }
 
-function buildRoomPlaceholder() {
+/* Escenarios de respaldo: 'habitacion' (cálida, mantel a cuadros) y 'sala' (verdosa, camino de mesa rayado, sofá y lámpara) */
+function buildRoomPlaceholder(variant) {
+  const sala = variant === 'sala';
+  const pal = sala
+    ? { floor: 0x5b5f66, wall: 0xc7d6d0, wall2: 0xb8cac3, top: 0x4a3022, leg: 0x33200f, window: 0xffe3b8 }
+    : { floor: 0xa9794c, wall: 0xf3e4c8, wall2: 0xefdcbc, top: 0x8c5a35, leg: 0x6e4526, window: 0xd9f0ff };
   const g = new THREE.Group();
   const plane = (w, h, color, o = {}) => new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat(color, o));
   const box = (w, h, d, color) => shadowed(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color)));
 
-  const floor = plane(60, 90, 0xa9794c); floor.rotation.x = -Math.PI / 2; floor.position.set(0, S - 3.2, -20); floor.receiveShadow = true; g.add(floor);
-  const back = plane(60, 24, 0xf3e4c8); back.position.set(0, S + 6, -52); g.add(back);
-  const left = plane(90, 24, 0xefdcbc); left.rotation.y = Math.PI / 2; left.position.set(-16, S + 6, -20); g.add(left);
-  const right = plane(90, 24, 0xefdcbc); right.rotation.y = -Math.PI / 2; right.position.set(16, S + 6, -20); g.add(right);
+  const floor = plane(60, 90, pal.floor); floor.rotation.x = -Math.PI / 2; floor.position.set(0, S - 3.2, -20); floor.receiveShadow = true; g.add(floor);
+  const back = plane(60, 24, pal.wall); back.position.set(0, S + 6, -52); g.add(back);
+  const left = plane(90, 24, pal.wall2); left.rotation.y = Math.PI / 2; left.position.set(-16, S + 6, -20); g.add(left);
+  const right = plane(90, 24, pal.wall2); right.rotation.y = -Math.PI / 2; right.position.set(16, S + 6, -20); g.add(right);
 
-  // mesa
-  const top = box(7.2, 0.3, 56, 0x8c5a35); top.position.set(0, S - 0.15, -20); g.add(top);
-  const g2 = document.createElement('canvas'); g2.width = g2.height = 128;
-  const c = g2.getContext('2d');
-  c.fillStyle = '#f4ead2'; c.fillRect(0, 0, 128, 128);
-  c.fillStyle = 'rgba(184,100,60,.32)'; c.fillRect(0, 0, 64, 128); c.fillRect(0, 0, 128, 64);
-  const tex = new THREE.CanvasTexture(g2); tex.colorSpace = THREE.SRGBColorSpace;
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(6, 50); tex.anisotropy = 8;
+  const top = box(7.2, 0.3, 56, pal.top); top.position.set(0, S - 0.15, -20); g.add(top);
+  const cv = document.createElement('canvas'); cv.width = cv.height = 128;
+  const c = cv.getContext('2d');
+  if (sala) {                               // camino de mesa con rayas verdes
+    c.fillStyle = '#efe6d2'; c.fillRect(0, 0, 128, 128);
+    c.fillStyle = 'rgba(63,108,84,.55)'; c.fillRect(0, 0, 22, 128); c.fillRect(106, 0, 22, 128);
+    c.fillStyle = 'rgba(63,108,84,.25)'; c.fillRect(54, 0, 20, 128);
+  } else {                                  // mantel a cuadros
+    c.fillStyle = '#f4ead2'; c.fillRect(0, 0, 128, 128);
+    c.fillStyle = 'rgba(184,100,60,.32)'; c.fillRect(0, 0, 64, 128); c.fillRect(0, 0, 128, 64);
+  }
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(sala ? 1 : 6, sala ? 14 : 50); tex.anisotropy = 8;
   const cloth = new THREE.Mesh(new THREE.PlaneGeometry(6.6, 56), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95 }));
   cloth.rotation.x = -Math.PI / 2; cloth.position.set(0, S + 0.004, -20); cloth.receiveShadow = true; g.add(cloth);
   for (const x of [-3.4, 3.4]) for (const z of [7.6, -47.6]) {
-    const leg = box(0.4, 2.9, 0.4, 0x6e4526); leg.position.set(x, S - 1.75, z); g.add(leg);
+    const leg = box(0.4, 2.9, 0.4, pal.leg); leg.position.set(x, S - 1.75, z); g.add(leg);
   }
-  // ventana y detalles de pared
-  const win = new THREE.Mesh(new THREE.PlaneGeometry(7, 4.6), new THREE.MeshBasicMaterial({ color: 0xd9f0ff }));
+
+  const win = new THREE.Mesh(new THREE.PlaneGeometry(7, 4.6), new THREE.MeshBasicMaterial({ color: pal.window }));
   win.position.set(0, S + 5, -51.9); g.add(win);
-  const frame = box(7.4, 0.25, 0.2, 0xffffff); frame.position.set(0, S + 7.4, -51.85); g.add(frame);
-  const frame2 = box(7.4, 0.25, 0.2, 0xffffff); frame2.position.set(0, S + 2.6, -51.85); g.add(frame2);
-  const mull = box(0.2, 4.8, 0.2, 0xffffff); mull.position.set(0, S + 5, -51.85); g.add(mull);
-  const shelf = box(1.2, 0.2, 9, 0x6e4526); shelf.position.set(15.4, S + 3.2, -18); g.add(shelf);
-  ['#c0584a', '#3f7d6a', '#d9a441', '#5b6fb5', '#a45c8f'].forEach((col, i) => {
-    const b = box(0.9, 1.1 + (i % 2) * 0.3, 0.45, new THREE.Color(col).getHex()); b.position.set(15.4, S + 3.9 + (i % 2) * 0.15, -21 + i * 0.6); g.add(b);
-  });
+  for (const [w, h, y] of [[7.4, 0.25, 7.4], [7.4, 0.25, 2.6], [0.2, 4.8, 5]]) {
+    const fr = box(w, h, 0.2, 0xffffff); fr.position.set(0, S + y, -51.85); g.add(fr);
+  }
+
+  if (sala) {
+    const rug = plane(14, 44, 0x9a4b4b); rug.rotation.x = -Math.PI / 2; rug.position.set(0, S - 3.18, -20); rug.receiveShadow = true; g.add(rug);
+    const seat = box(3.2, 1.2, 9, 0x3f6c88); seat.position.set(-12.4, S - 2.6, -18); g.add(seat);
+    const backrest = box(0.9, 2.2, 9, 0x35596f); backrest.position.set(-14.4, S - 1.6, -18); g.add(backrest);
+    for (let i = 0; i < 3; i++) { const cu = box(2.4, 0.4, 2.8, 0x4d80a0); cu.position.set(-12.1, S - 1.8, -21 + i * 3); g.add(cu); }
+    const pole = box(0.14, 5.5, 0.14, 0x222222); pole.position.set(12.5, S - 0.45, -14); g.add(pole);
+    const shade = shadowed(new THREE.Mesh(new THREE.ConeGeometry(0.9, 1.1, 20, 1, true), new THREE.MeshStandardMaterial({ color: 0xffe9b0, emissive: 0xffd27a, emissiveIntensity: 0.8, side: THREE.DoubleSide })), false, false);
+    shade.position.set(12.5, S + 2.6, -14); g.add(shade);
+    const tvUnit = box(1.4, 1.6, 10, 0x2a2420); tvUnit.position.set(15.2, S - 2.4, -26); g.add(tvUnit);
+  } else {
+    const shelf = box(1.2, 0.2, 9, 0x6e4526); shelf.position.set(15.4, S + 3.2, -18); g.add(shelf);
+    ['#c0584a', '#3f7d6a', '#d9a441', '#5b6fb5', '#a45c8f'].forEach((col, i) => {
+      const b = box(0.9, 1.1 + (i % 2) * 0.3, 0.45, new THREE.Color(col).getHex()); b.position.set(15.4, S + 3.9 + (i % 2) * 0.15, -21 + i * 0.6); g.add(b);
+    });
+  }
   return g;
 }
 
 const PLACEHOLDERS = {
-  nami: buildNamiPlaceholder, habitacion: buildRoomPlaceholder, cochinilla: buildCochinillaPlaceholder,
+  nami: buildNamiPlaceholder, cochinilla: buildCochinillaPlaceholder, arana: buildAranaPlaceholder,
   piedra: buildPiedraPlaceholder, mora: buildMoraPlaceholder,
+  habitacion: () => buildRoomPlaceholder('habitacion'), sala: () => buildRoomPlaceholder('sala'),
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -328,7 +401,7 @@ const PLACEHOLDERS = {
 const templates = {};   // key → { make(): Object3D, placeholder: boolean }
 const loader = new GLTFLoader();
 
-function prepareGLB(gltf, cfg, align) {
+function prepareGLB(gltf, cfg) {
   const inner = gltf.scene;
   inner.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   inner.rotation.y = cfg.rotationY || 0;
@@ -341,7 +414,7 @@ function prepareGLB(gltf, cfg, align) {
   }
   inner.scale.setScalar(s * cfg.scale);
   inner.updateMatrixWorld(true);
-  if (align) {            // base apoyada en y=0 y centrado en x/z
+  if (!cfg.scenery) {   // personajes y objetos: base en y=0 y centrados en x/z
     const b = new THREE.Box3().setFromObject(inner);
     const c = b.getCenter(new THREE.Vector3());
     inner.position.set(-c.x, -b.min.y, -c.z);
@@ -358,7 +431,7 @@ async function loadModel(key) {
   const cfg = MODELS[key];
   try {
     const gltf = await loader.loadAsync(cfg.file);
-    const prepared = prepareGLB(gltf, cfg, key !== 'habitacion');
+    const prepared = prepareGLB(gltf, cfg);
     templates[key] = { placeholder: false, make: () => SkeletonUtils.clone(prepared) };
   } catch (err) {
     console.warn(`[Nami] No se pudo cargar ${cfg.file}; se usa un placeholder.`, err?.message || err);
@@ -403,18 +476,21 @@ const sfx = {
    ▌ ESTADO DEL JUEGO
    ═══════════════════════════════════════════════════════════════ */
 let state = 'loading';       // loading | menu | playing | finale | won | lost
+let levelIndex = 0, level = LEVELS[0], selectedLevel = 0;
 let elapsed = 0, time = 0, leaks = 0, kills = 0, spawnTimer = 1;
-let lostAt = 0, shake = 0, lastTypes = [];
-const entities = [];         // cochinillas y piedras activas
+let lostAt = 0, wonAt = 0, shake = 0, lastTypes = [];
+const entities = [];         // enemigos y piedras activos
 const dying = [], particles = [], fxList = [];
 let berry = null, finale = null, room = null, debugGroup = null;
 
-const nami = { y: 0, vy: 0, grounded: true, attackT: -1, cooldown: 0, hurt: 0, swingKind: 'attack', obj: null, anim: null, arms: null };
+const nami = { y: 0, vy: 0, grounded: true, attackT: -1, cooldown: 0, hurt: 0, obj: null, anim: null, arms: null };
 
 const $ = id => document.getElementById(id);
 const el = { hud: $('hud'), kills: $('kills'), bar: $('barfill'), timeTxt: $('timeTxt'), leaks: [...document.querySelectorAll('#leaks i')],
-  screen: $('screen'), screenText: $('screenText'), keysBox: $('keysBox'), startBtn: $('startBtn'), status: $('status'),
-  lostReason: $('lostReason'), banner: $('banner'), flash: $('flash') };
+  screen: $('screen'), screenTitle: $('screenTitle'), screenText: $('screenText'), keysBox: $('keysBox'), startBtn: $('startBtn'),
+  status: $('status'), lostReason: $('lostReason'), banner: $('banner'), bannerTitle: $('bannerTitle'), bannerText: $('bannerText'),
+  flash: $('flash'), levelPick: $('levelPick'), chips: [...document.querySelectorAll('.chip')],
+  ltNum: $('ltNum'), ltName: $('ltName'), levelTitle: $('levelTitle') };
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const easeOutBack = t => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
@@ -444,25 +520,39 @@ function shockwave(pos) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   ▌ ENTIDADES
+   ▌ ENTIDADES (kind: 'enemy' | 'piedra')
    ═══════════════════════════════════════════════════════════════ */
-function spawn(type) {
-  const obj = spawnModel(type);
-  const holder = new THREE.Group();     // el holder se anima (aparición, salto), el modelo queda intacto
-  holder.add(obj);
+function spawn(kind) {
+  const model = spawnModel(kind === 'piedra' ? 'piedra' : level.enemy);
+  const holder = new THREE.Group();     // el holder se anima (aparición, correteo); el modelo queda intacto
+  holder.add(model);
   holder.position.set(0, S, CONFIG.SPAWN_Z);
   holder.scale.setScalar(0.01);
   scene.add(holder);
-  entities.push({ type, obj: holder, z: CONFIG.SPAWN_Z, age: 0 });
+  entities.push({ kind, obj: holder, model, z: CONFIG.SPAWN_Z, age: 0, speed: kind === 'piedra' ? level.rockSpeed : level.enemySpeed });
+}
+
+// Evita que un objeto más veloz alcance a otro (y lo atraviese) antes de llegar a Nami
+function wouldOverlap(speed) {
+  for (const e of entities) {
+    const dz = e.z - CONFIG.SPAWN_Z;
+    if (dz > 0 && speed > e.speed) {
+      const catchZ = CONFIG.SPAWN_Z + speed * dz / (speed - e.speed);
+      if (catchZ < CONFIG.NAMI_Z + 1.2) return true;
+    }
+  }
+  return false;
 }
 
 function spawnNext() {
-  let type = Math.random() < CONFIG.ROCK_CHANCE ? 'piedra' : 'cochinilla';
-  if (lastTypes.length === 0) type = 'cochinilla';                                   // la primera siempre es cochinilla
-  if (type === 'piedra' && lastTypes[0] === 'piedra' && lastTypes[1] === 'piedra') type = 'cochinilla';
-  lastTypes.unshift(type); lastTypes.length = Math.min(lastTypes.length, 3);
-  spawn(type);
-  spawnTimer = rand(CONFIG.SPAWN_MIN, CONFIG.SPAWN_MAX) + (type === 'piedra' ? 0.5 : 0);
+  let kind = Math.random() < level.rockChance ? 'piedra' : 'enemy';
+  if (lastTypes.length === 0) kind = 'enemy';                                        // la primera siempre es un bicho
+  if (kind === 'piedra' && lastTypes[0] === 'piedra' && lastTypes[1] === 'piedra') kind = 'enemy';
+  const speed = kind === 'piedra' ? level.rockSpeed : level.enemySpeed;
+  if (wouldOverlap(speed)) { spawnTimer = 0.2; return; }                             // reintenta en un momento
+  lastTypes.unshift(kind); lastTypes.length = Math.min(lastTypes.length, 3);
+  spawn(kind);
+  spawnTimer = rand(level.spawnMin, level.spawnMax) + (kind === 'piedra' ? 0.5 : 0);
 }
 
 function removeEntity(e) {
@@ -470,7 +560,7 @@ function removeEntity(e) {
   const i = entities.indexOf(e); if (i >= 0) entities.splice(i, 1);
 }
 
-function squashEntity(e, color = 0xc9ced8, withSound = true) {
+function squashEntity(e, color = level.burst, withSound = true) {
   const p = e.obj.position.clone(); p.y += 0.25;
   burst(p, color, 14);
   const i = entities.indexOf(e); if (i >= 0) entities.splice(i, 1);
@@ -478,49 +568,51 @@ function squashEntity(e, color = 0xc9ced8, withSound = true) {
   if (withSound) sfx.squash();
 }
 
-function nami_attackActive() {
-  return nami.attackT >= 0.04 && nami.attackT <= CONFIG.ATTACK_DURATION * 0.75;
-}
+const attackActive = () => nami.attackT >= 0.04 && nami.attackT <= CONFIG.ATTACK_DURATION * 0.75;
 
 function updateEntities(dt) {
   const nz = CONFIG.NAMI_Z;
   for (const e of [...entities]) {
     e.age += dt;
-    e.z += CONFIG.ENEMY_SPEED * dt;
+    e.z += e.speed * dt;
     e.obj.position.z = e.z;
     e.obj.scale.setScalar(Math.min(1, easeOutBack(Math.min(e.age / 0.4, 1)) || 0.01));
-    if (e.type === 'cochinilla') {
-      e.obj.position.y = S + Math.abs(Math.sin(e.age * 16)) * 0.04;
-      e.obj.rotation.z = Math.sin(e.age * 14) * 0.07;
+
+    if (e.kind === 'enemy') {                 // animación de caminar
+      if (level.wobble === 'scuttle') {
+        e.obj.position.x = Math.sin(e.age * 9) * 0.07;
+        e.obj.rotation.z = Math.sin(e.age * 30) * 0.05;
+        const legs = e.model.userData.legs;
+        if (legs) for (const l of legs) l.pivot.rotation.y = l.base + Math.sin(e.age * 34 + l.phase) * 0.35;
+      } else {
+        e.obj.position.y = S + Math.abs(Math.sin(e.age * 16)) * 0.04;
+        e.obj.rotation.z = Math.sin(e.age * 14) * 0.07;
+      }
     }
 
     if (state === 'playing') {
-      if (e.type === 'cochinilla') {
-        // Manotazo: golpea las cochinillas dentro del alcance
-        if (nami_attackActive() && e.z >= nz - CONFIG.ATTACK_RANGE && e.z <= nz - CONFIG.LEAK_DISTANCE + 0.4) {
+      if (e.kind === 'enemy') {
+        if (attackActive() && e.z >= nz - CONFIG.ATTACK_RANGE && e.z <= nz - CONFIG.LEAK_DISTANCE + 0.4) {
           kills++; el.kills.textContent = kills;
           squashEntity(e);
           continue;
         }
-        // Se acercó demasiado a Nami
-        if (e.z >= nz - CONFIG.LEAK_DISTANCE) {
+        if (e.z >= nz - CONFIG.LEAK_DISTANCE) {            // se acercó demasiado a Nami
           leaks++;
           el.leaks.forEach((d, i) => d.classList.toggle('full', i < leaks));
           const p = e.obj.position.clone(); p.y += 0.4;
           burst(p, 0xe0483c, 10, 2.5);
           removeEntity(e);
           nami.hurt = 1; shake = 0.5; flash('hit'); sfx.hurt();
-          if (leaks >= CONFIG.MAX_LEAKS) { gameOver('Tres cochinillas llegaron hasta Nami.'); return; }
+          if (leaks >= level.maxLeaks) { gameOver(`Tres ${level.enemyPlural} llegaron hasta Nami.`); return; }
           continue;
         }
-      } else if (e.type === 'piedra') {
-        if (Math.abs(e.z - nz) < CONFIG.ROCK_HALF_DEPTH && nami.y < CONFIG.ROCK_HEIGHT) {
-          gameOver('Nami chocó con una piedra. ¡Salta con ↑!');
-          return;
-        }
+      } else if (Math.abs(e.z - nz) < CONFIG.ROCK_HALF_DEPTH && nami.y < CONFIG.ROCK_HEIGHT) {
+        gameOver('Nami chocó con una piedra. ¡Salta con ↑!');
+        return;
       }
     } else if (state === 'finale' && e.z > nz - 0.6) {
-      squashEntity(e, 0xc9ced8, false);          // durante el final nada lastima a Nami
+      squashEntity(e, level.burst, false);                 // durante el final nada lastima a Nami
       continue;
     }
     if (e.z > 8) removeEntity(e);
@@ -534,9 +626,9 @@ function jump() {
   if (!(state === 'playing' || state === 'finale') || !nami.grounded) return;
   nami.vy = CONFIG.JUMP_VELOCITY; nami.grounded = false; sfx.jump();
 }
-function attack(kind = 'attack') {
+function attack() {
   if (!(state === 'playing' || state === 'finale') || nami.cooldown > 0) return;
-  nami.attackT = 0; nami.cooldown = CONFIG.ATTACK_COOLDOWN; nami.swingKind = kind;
+  nami.attackT = 0; nami.cooldown = CONFIG.ATTACK_COOLDOWN;
   sfx.swing();
 }
 
@@ -611,7 +703,7 @@ function updateFinale(dt) {
     berry.position.copy(hold); berry.position.y += Math.sin(f.t * 5) * 0.06;
     berry.rotation.y += dt * 4;
     berryLight.position.copy(berry.position);
-    if (f.t >= 1.2) { f.phase = 'throw'; f.throwT = 0; attack('throw'); }
+    if (f.t >= 1.2) { f.phase = 'throw'; f.throwT = 0; attack(); }
   } else if (f.phase === 'throw') {
     f.throwT += dt;
     const p = Math.min(f.throwT / 0.9, 1);
@@ -630,15 +722,25 @@ function updateFinale(dt) {
   } else if (f.phase === 'boom') {
     f.after += dt;
     if (f.after > 1.1) {
-      f.phase = 'done'; state = 'won';
-      el.banner.classList.add('on'); sfx.win();
+      f.phase = 'done'; state = 'won'; wonAt = performance.now();
+      const next = LEVELS[levelIndex + 1];
+      el.bannerTitle.textContent = `¡Nivel ${level.num} Completado!`;
+      el.bannerText.textContent = level.winText + (next ? ` Enter o clic: Nivel ${next.num}.` : ' ¡Pronto habrá más niveles! Enter o clic para volver al Nivel 1.');
+      el.banner.classList.remove('on'); void el.banner.offsetWidth; el.banner.classList.add('on');
+      sfx.win();
     }
   }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   ▌ FLUJO: iniciar / reiniciar / game over
+   ▌ NIVELES: escenario, inicio, reinicio, game over
    ═══════════════════════════════════════════════════════════════ */
+function setRoom(idx) {
+  if (room) scene.remove(room);
+  room = spawnModel(LEVELS[idx].room);
+  scene.add(room);
+}
+
 function clearWorld() {
   [...entities].forEach(removeEntity);
   dying.forEach(d => scene.remove(d.obj)); dying.length = 0;
@@ -648,17 +750,23 @@ function clearWorld() {
   berryLight.intensity = 0;
 }
 
-function resetGame() {
+function startLevel(idx) {
+  levelIndex = idx; level = LEVELS[idx];
+  setRoom(idx);
   clearWorld();
   elapsed = 0; leaks = 0; kills = 0; spawnTimer = 1.0; lastTypes = []; shake = 0; finale = null;
   Object.assign(nami, { y: 0, vy: 0, grounded: true, attackT: -1, cooldown: 0, hurt: 0 });
   el.kills.textContent = '0';
-  el.leaks.forEach(d => d.classList.remove('full'));
+  el.leaks.forEach((d, i) => { d.classList.remove('full'); d.parentElement.style.display = ''; d.style.display = i < level.maxLeaks ? '' : 'none'; });
   el.bar.style.width = '0%';
-  el.timeTxt.textContent = SURVIVE_SECONDS + ' s';
+  el.timeTxt.textContent = level.surviveSeconds + ' s';
   el.banner.classList.remove('on');
   el.screen.classList.remove('on');
   el.hud.classList.add('on');
+  el.lostReason.textContent = '';
+  // título del nivel (reinicia la animación)
+  el.ltNum.textContent = `Nivel ${level.num} · ${level.intro}`; el.ltName.textContent = level.name;
+  el.levelTitle.classList.remove('on'); void el.levelTitle.offsetWidth; el.levelTitle.classList.add('on');
   state = 'playing';
 }
 
@@ -666,17 +774,24 @@ function gameOver(reason) {
   state = 'lost'; lostAt = performance.now();
   shake = 0.6; flash('hit', 250); sfx.hurt();
   el.lostReason.textContent = reason;
-  el.screen.querySelector('h1').innerHTML = '<small>Game Over</small>¡Auch!';
+  el.screenTitle.innerHTML = `<small>Game Over · Nivel ${level.num}</small>¡Auch!`;
   el.screenText.textContent = 'Nami necesita otro intento para defender su nuevo hogar.';
-  el.keysBox.style.display = 'none';
+  el.keysBox.style.display = 'none'; el.levelPick.style.display = 'none';
   el.startBtn.textContent = 'Reintentar';
   setTimeout(() => { if (state === 'lost') el.screen.classList.add('on'); }, 700);
 }
 
+function selectLevel(i) {
+  selectedLevel = i;
+  el.chips.forEach((c, k) => c.classList.toggle('on', k === i));
+  setRoom(i);                          // vista previa del escenario detrás del menú
+}
+
 function tryStart() {
-  if (state === 'menu') resetGame();
-  else if (state === 'lost' && performance.now() - lostAt > 900) { el.lostReason.textContent = ''; resetGame(); }
-  else if (state === 'won') { el.lostReason.textContent = ''; resetGame(); }
+  const now = performance.now();
+  if (state === 'menu') startLevel(selectedLevel);
+  else if (state === 'lost' && now - lostAt > 900) startLevel(levelIndex);
+  else if (state === 'won' && now - wonAt > 900) startLevel(LEVELS[levelIndex + 1] ? levelIndex + 1 : 0);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -688,13 +803,15 @@ addEventListener('keydown', e => {
   else if (e.code === 'Space') { e.preventDefault(); if (state === 'playing' || state === 'finale') attack(); else tryStart(); }
   else if (e.code === 'Enter' || e.code === 'KeyR') tryStart();
   else if (e.code === 'KeyH') toggleDebug();
+  else if (state === 'menu' && (e.code === 'Digit1' || e.code === 'Digit2')) selectLevel(Number(e.code.slice(-1)) - 1);
 });
 renderer.domElement.addEventListener('pointerdown', e => {
-  if (e.button === 0) attack();
+  if (e.button !== 0) return;
+  if (state === 'won') tryStart(); else attack();
 });
 el.screen.addEventListener('pointerdown', () => tryStart());
-// Táctil: deslizar hacia arriba = saltar
-let touchY = null;
+el.chips.forEach((c, i) => c.addEventListener('pointerdown', ev => { ev.stopPropagation(); selectLevel(i); }));
+let touchY = null;                       // táctil: deslizar hacia arriba = saltar
 renderer.domElement.addEventListener('touchstart', e => { touchY = e.touches[0].clientY; }, { passive: true });
 renderer.domElement.addEventListener('touchend', e => {
   if (touchY !== null && touchY - e.changedTouches[0].clientY > 40) jump();
@@ -726,13 +843,13 @@ function update(dt) {
 
   if (state === 'playing') {
     elapsed += dt;
-    if (elapsed >= SURVIVE_SECONDS) { elapsed = SURVIVE_SECONDS; startFinale(); }
+    if (elapsed >= level.surviveSeconds) { elapsed = level.surviveSeconds; startFinale(); }
     else {
       spawnTimer -= dt;
       if (spawnTimer <= 0) spawnNext();
-      el.timeTxt.textContent = Math.ceil(SURVIVE_SECONDS - elapsed) + ' s';
+      el.timeTxt.textContent = Math.ceil(level.surviveSeconds - elapsed) + ' s';
     }
-    el.bar.style.width = (elapsed / SURVIVE_SECONDS * 100) + '%';
+    el.bar.style.width = (elapsed / level.surviveSeconds * 100) + '%';
   }
   if (active) {
     updateNamiPhysics(dt);
@@ -741,7 +858,7 @@ function update(dt) {
   }
   animateNami(dt);
 
-  for (let i = dying.length - 1; i >= 0; i--) {         // cochinillas aplastadas
+  for (let i = dying.length - 1; i >= 0; i--) {         // bichos aplastados
     const d = dying[i]; d.t += dt;
     const p = Math.min(d.t / 0.25, 1);
     d.obj.scale.set(1 + p * 0.5, Math.max(0.05, 1 - p * 0.95), 1 + p * 0.5);
@@ -762,10 +879,7 @@ function update(dt) {
   }
 
   shake = Math.max(0, shake - dt * 1.6);
-  camera.position.set(
-    camBase.x + (Math.random() - .5) * shake * 0.35,
-    camBase.y + (Math.random() - .5) * shake * 0.35,
-    camBase.z);
+  camera.position.set(camBase.x + (Math.random() - .5) * shake * 0.35, camBase.y + (Math.random() - .5) * shake * 0.35, camBase.z);
   camera.lookAt(...CAMERA.lookAt);
 }
 
@@ -776,13 +890,10 @@ function loop() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   ▌ ARRANQUE
+   ▌ ARRANQUE  (tip: abre index.html?nivel=2 para entrar directo al Nivel 2)
    ═══════════════════════════════════════════════════════════════ */
 (async function init() {
   await Promise.all(Object.keys(MODELS).map(loadModel));
-
-  room = spawnModel('habitacion');
-  scene.add(room);
 
   nami.obj = new THREE.Group();
   nami.anim = new THREE.Group();
@@ -792,14 +903,18 @@ function loop() {
   nami.arms = namiModel.userData.arms || null;
   scene.add(nami.obj);
 
-  const names = { nami: 'Nami', habitacion: 'Habitación y mesa', cochinilla: 'Cochinilla', piedra: 'Piedra', mora: 'Mora' };
+  const names = { nami: 'Nami', habitacion: 'Habitación', sala: 'Sala', cochinilla: 'Cochinilla', arana: 'Araña', piedra: 'Piedra', mora: 'Mora' };
   el.status.innerHTML = 'Modelos: ' + Object.keys(MODELS).map(k =>
-    templates[k].placeholder ? `<s>${names[k]} (figura de respaldo)</s>` : `<b>${names[k]} ✓</b>`).join(' · ')
+    templates[k].placeholder ? `<s>${names[k]} (respaldo)</s>` : `<b>${names[k]} ✓</b>`).join(' · ')
     + (Object.values(templates).every(t => t.placeholder)
       ? '<br>Si ya pusiste tus .glb en modelos/ y no aparecen, abre el juego con un servidor local (por ejemplo: python -m http.server).' : '');
 
-  el.screenText.textContent = 'Nami está estrenando casa y la mesa de la habitación está llena de bichos. Defiéndela con tus manitas.';
+  const fromUrl = Number(new URLSearchParams(location.search).get('nivel'));
+  selectLevel(fromUrl >= 1 && fromUrl <= LEVELS.length ? fromUrl - 1 : 0);
+
+  el.screenText.textContent = 'Nami está estrenando casa. Defiéndela de los bichos con tus manitas y salta las piedras.';
   el.keysBox.style.display = 'grid';
+  el.levelPick.style.display = 'flex';
   el.startBtn.disabled = false;
   el.startBtn.textContent = 'Empezar';
   state = 'menu';
