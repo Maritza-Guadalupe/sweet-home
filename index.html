@@ -124,7 +124,7 @@ const NIVEL_2 = { ENEMY_SPEED: 11, ROCK_SPEED: 8, SPAWN_MIN: 1.0, SPAWN_MAX: 1.9
 // ⚙ Parámetros comunes
 const CONFIG = {
   SURFACE_Y: 2.0,            // Altura (Y) de la superficie de la mesa donde ocurre todo el juego
-  NAMI_Z: 2.5,               // Posición de Nami a lo largo del carril
+  NAMI_Z: 2.0,               // Posición de Nami a lo largo del carril
   SPAWN_Z: -30,            // Dónde aparecen los obstáculos (lejos de Nami)
   LEAK_DISTANCE: 1.0,      // A qué distancia de Nami cuenta un bicho como "llegó"
   ATTACK_RANGE: 2.8,       // Alcance del manotazo
@@ -151,7 +151,7 @@ const CAMERA = { position: [0, 3.5, 6.5], lookAt: [0, 1.0, -2], fov: 60 };
 const MODELS = {
   nami:       { file: 'modelos/nami.glb',            scale: 1, fitHeight: 1.4,  position: [-0.5, 0, 0.5], rotationY: Math.PI, placeholderScale: 1 },
   habitacion: { file: 'modelos/habitacion_mesa.glb', scale: 1, fitHeight: null, position: [0, 0, 0], rotationY: Math.PI/2,       placeholderScale: 1, scenery: true },
-  sala:       { file: 'modelos/sala_mesa.glb',       scale: 1, fitHeight: null, position: [0, -1.5, 0], rotationY: Math.PI/2,       placeholderScale: 1, scenery: true },
+  sala:       { file: 'modelos/sala_mesa.glb',       scale: 1, fitHeight: null, position: [0, -2, 0], rotationY: Math.PI/2,       placeholderScale: 1, scenery: true },
   cochinilla: { file: 'modelos/cochinilla.glb',      scale: 1, fitHeight: 0.45, position: [0, 0, 0], rotationY: 0,       placeholderScale: 1 },
   arana:      { file: 'modelos/arana.glb',           scale: 1, fitHeight: 0.40, position: [0, 0, 0], rotationY: 0,       placeholderScale: 1 },
   piedra:     { file: 'modelos/piedra.glb',          scale: 1, fitHeight: CONFIG.ROCK_HEIGHT, position: [0, 0, 0], rotationY: 0, placeholderScale: 1 },
