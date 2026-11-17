@@ -126,7 +126,7 @@ const NIVEL_2 = { ENEMY_SPEED: 11, ROCK_SPEED: 8, SPAWN_MIN: 1.0, SPAWN_MAX: 1.9
 // Nivel 3: caracoles lentos que aguantan 2 golpes. Lo que no pongas aquí (SPAWN_Z, ATTACK_RANGE...) usa el valor de CONFIG.
 const NIVEL_3 = {
   ENEMY_SPEED: 3.5,        // caracoles: lentos
-  ROCK_SPEED: 5,         // piedras (igual que los caracoles para que no se atraviesen)
+  ROCK_SPEED: 4,         // piedras (igual que los caracoles para que no se atraviesen)
   SPAWN_Z: -17,            // aparecen más cerca porque avanzan despacio
   SPAWN_MIN: 1.6, SPAWN_MAX: 2.6, ROCK_CHANCE: 0.35, MAX_LEAKS: 3,
   ENEMY_HITS: 2,           // golpes necesarios para eliminar un caracol
@@ -167,7 +167,7 @@ const MODELS = {
   sala:       { file: 'modelos/sala_mesa.glb',       scale: 1, fitHeight: null, position: [0.9, -1.1, 0], rotationY: 0,       placeholderScale: 1, scenery: true },
   cochinilla: { file: 'modelos/cochinilla.glb',      scale: 1, fitHeight: 0.45, position: [0, 0, 0], rotationY: 0,       placeholderScale: 1 },
   arana:      { file: 'modelos/arana.glb',           scale: 1, fitHeight: 0.40, position: [0, 0, 0], rotationY: 0,       placeholderScale: 1 },
-  cocina:     { file: 'modelos/cocina_mesa.glb',      scale: 1, fitHeight: null, position: [-0.9, 0, 0], rotationY: Math.PI/2,       placeholderScale: 1, scenery: true },
+  cocina:     { file: 'modelos/cocina_mesa.glb',      scale: 1, fitHeight: null, position: [-0.10, -1.1, 0], rotationY: Math.PI/2,       placeholderScale: 1, scenery: true },
   caracol:    { file: 'modelos/caracoles.glb',       scale: 1, fitHeight: 0.60, position: [0, 0, 0], rotationY: 0,       placeholderScale: 1 },
   piedra:     { file: 'modelos/piedra.glb',          scale: 1, fitHeight: CONFIG.ROCK_HEIGHT, position: [0, 0, 0], rotationY: 0, placeholderScale: 1 },
   mora:       { file: 'modelos/mora.glb',            scale: 1, fitHeight: 0.4,  position: [0, 0, 0], rotationY: Math.PI,       placeholderScale: 1 },
