@@ -162,7 +162,7 @@ const CAMERA = { position: [0, 3.5, 6.5], lookAt: [0, 1.0, -2], fov: 60 };
    Los escenarios (habitacion, sala, cocina) NO se autoajustan: mueve position[1] hasta que la superficie
    de la mesa quede en y = CONFIG.SURFACE_Y (tecla H = guía del carril y ejes). */
 const MODELS = {
-  nami:       { file: 'modelos/nami.glb',            scale: 1, fitHeight: 1.4,  position: [1.0, 0, 0.5], rotationY: Math.PI, placeholderScale: 1 },
+  nami:       { file: 'modelos/nami.glb',            scale: 1, fitHeight: 1.4,  position: [-1.0, 0, 0.5], rotationY: Math.PI, placeholderScale: 1 },
   habitacion: { file: 'modelos/habitacion_mesa.glb', scale: 1, fitHeight: null, position: [0.9, 0, 0], rotationY: Math.PI/2,       placeholderScale: 1, scenery: true },
   sala:       { file: 'modelos/sala_mesa.glb',       scale: 1, fitHeight: null, position: [0, -2, 0], rotationY: Math.PI/2,       placeholderScale: 1, scenery: true },
   cochinilla: { file: 'modelos/cochinilla.glb',      scale: 1, fitHeight: 0.45, position: [0, 0, 0], rotationY: 0,       placeholderScale: 1 },
